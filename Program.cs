@@ -21,9 +21,9 @@ internal class Program
             return;
         }
 
-        if (Environment.Version.Major != 8)
+        if (Environment.Version.Major != 9)
         {
-            Console.WriteLine("This code requires .NET 8");
+            Console.WriteLine("This code requires .NET 9");
             return;
         }
 
@@ -42,7 +42,7 @@ internal class Program
         GC.RegisterNoGCRegionCallback(150 * 1024 * 1024, () => throw new OutOfMemoryException("Interrupted by GC :( "));
 
         ref var thread = ref NativeThread.GetCurrentNativeThread();
-        var heap = thread.m_alloc_context.gc_reserved_1;
+        var heap = thread.m_pRuntimeThreadLocals->alloc_context.gc_reserved_1;
 
         var vtablePtr = (nint*)heap->vtable;
 
@@ -53,7 +53,7 @@ internal class Program
 
         var context = ValueTuple.Create(stats);
 
-        diagDescrGenerations(thread.m_alloc_context.gc_reserved_1, walkGeneration, &context);
+        diagDescrGenerations(thread.m_pRuntimeThreadLocals->alloc_context.gc_reserved_1, walkGeneration, &context);
 
         WalkNGCH(&context);
 

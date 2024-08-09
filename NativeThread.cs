@@ -15,34 +15,24 @@ internal unsafe struct NativeThread
     static extern ref IntPtr GetNativeThread(Thread thread);
 
     [FieldOffset(0)]
-    public nint m_stackLocalAllocator;
-
-    [FieldOffset(8)]
     public int m_state;
 
-    [FieldOffset(12)]
+    [FieldOffset(4)]
     public byte m_fPreemptiveGCDisabled;
 
-    [FieldOffset(16)]
+    [FieldOffset(8)]
     public nint m_pFrame;
 
-    [FieldOffset(24)]
-    public nint m_pDomain;
-
-    [FieldOffset(32)]
+    [FieldOffset(16)]
     public int m_ThreadId;
 
-    [FieldOffset(40)]
-    public nint m_pHead;
-
-    [FieldOffset(48)]
-    public LockEntry m_embeddedEntry;
-
-    [FieldOffset(80)]
+    [FieldOffset(24)]
     public nint m_pBlockingLock;
 
-    [FieldOffset(88)]
-    public gc_alloc_context m_alloc_context;
+    [FieldOffset(32)]
+    public RuntimeThreadLocals* m_pRuntimeThreadLocals;
+
+    // FIELDS BELOW ARE NOT UPDATED
 
     [FieldOffset(144)]
     public nint m_thAllocContextObj;
