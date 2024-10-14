@@ -21,11 +21,13 @@ internal class Program
             return;
         }
 
-        if (Environment.Version.Major != 9)
+        if (Environment.Version.Major < 9)
         {
-            Console.WriteLine("This code requires .NET 9");
+            Console.WriteLine("This code requires at lease .NET 9");
             return;
         }
+
+        Console.WriteLine("Warning: Support for .Net 10 is experimental");
 
         DumpHeapStat();
     }
