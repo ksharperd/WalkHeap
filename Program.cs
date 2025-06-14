@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿#if !NET10_0_OR_GREATER
+using System.Reflection;
+#endif
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -44,7 +46,12 @@ internal class Program
         GC.RegisterNoGCRegionCallback(150 * 1024 * 1024, () => throw new OutOfMemoryException("Interrupted by GC :( "));
 
         ref var thread = ref NativeThread.GetCurrentNativeThread();
-        var heap = thread.m_pRuntimeThreadLocals->alloc_context.gc_reserved_1;
+        var heap = 
+#if NET10_0_OR_GREATER
+        thread.m_pRuntimeThreadLocals->alloc_context.m_GCAllocContext.gc_reserved_1;
+#else
+        thread.m_pRuntimeThreadLocals->alloc_context.gc_reserved_1;
+#endif
 
         var vtablePtr = (nint*)heap->vtable;
 
@@ -55,7 +62,7 @@ internal class Program
 
         var context = ValueTuple.Create(stats);
 
-        diagDescrGenerations(thread.m_pRuntimeThreadLocals->alloc_context.gc_reserved_1, walkGeneration, &context);
+        diagDescrGenerations(heap, walkGeneration, &context);
 
         WalkNGCH(&context);
 
@@ -136,7 +143,11 @@ internal class Program
 
     private static unsafe void WalkNGCH(void* context)
     {
+#if NET10_0_OR_GREATER
+        var segment = _RegisterFrozenSegment(null, 0x0, 0);
+#else
         var segment = RegisterFrozenSegment((IntPtr)0x0, 0);
+#endif
 
         var heapSegment = *(heap_segment*)segment;
 
@@ -152,7 +163,11 @@ internal class Program
             next = next->next;
         }
 
+#if NET10_0_OR_GREATER
+        _UnregisterFrozenSegment(null, segment);
+#else
         UnregisterFrozenSegment(segment);
+#endif
     }
     private static unsafe int ComputeSize(nint* address)
     {
@@ -176,6 +191,13 @@ internal class Program
 
     private static unsafe ref MethodTable ReadMethodTable(nint* address) => ref *(MethodTable*)*address;
 
+#if NET10_0_OR_GREATER
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+    private static extern nint _RegisterFrozenSegment([UnsafeAccessorType("System.GC, System.Private.CoreLib")] object? c, nint sectionAddress, nint sectionSize);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+    private static extern void _UnregisterFrozenSegment([UnsafeAccessorType("System.GC, System.Private.CoreLib")] object? c, nint segment);
+#else
     private static IntPtr RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize)
     {
         return (IntPtr)typeof(GC).GetMethod("_RegisterFrozenSegment", BindingFlags.NonPublic | BindingFlags.Static)!
@@ -187,4 +209,6 @@ internal class Program
         typeof(GC).GetMethod("_UnregisterFrozenSegment", BindingFlags.NonPublic | BindingFlags.Static)!
             .Invoke(null, [segment]);
     }
+#endif
+
 }
